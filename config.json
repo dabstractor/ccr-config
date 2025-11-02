@@ -1,0 +1,75 @@
+{
+  "LOG": true,
+  "API_TIMEOUT_MS": 120000,
+  "transformers": [
+    {
+      "path": "/home/dustin/.claude-code-router/plugins/z-ai-vision.js",
+      "options": {}
+    }
+  ],
+  "Providers": [
+    {
+      "name": "z-ai",
+      "api_base_url": "https://api.z.ai/api/coding/paas/v4/chat/completions",
+      "api_key": "${Z_AI_API_KEY}",
+      "transformer": {
+        "use": [
+          "z-ai-vision",
+          "reasoning",
+          "enhancetool",
+          "OpenAI"
+        ]
+      },
+      "models": [
+        {
+          "name": "GLM-4.6",
+          "transformer": {
+            "use": [
+              [
+                "maxtoken",
+                {
+                  "max_tokens": 200000
+                }
+              ]
+            ]
+          }
+        },
+        {
+          "name": "GLM-4.5",
+          "transformer": {
+            "use": [
+              [
+                "maxtoken",
+                {
+                  "max_tokens": 115000
+                }
+              ]
+            ]
+          }
+        },
+        {
+          "name": "GLM-4.5-air",
+          "transformer": {
+            "use": [
+              [
+                "maxtoken",
+                {
+                  "max_tokens": 115000
+                }
+              ]
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "Router": {
+    "default": "z-ai,GLM-4.6",
+    "background": "z-ai,GLM-4.5-air",
+    "think": "z-ai,GLM-4.6",
+    "longContext": "z-ai,GLM-4.6",
+    "longContextThreshold": 200000,
+    "webSearch": "z-ai,GLM-4.5-air",
+    "coding": "z-ai,GLM-4.6"
+  }
+}
