@@ -5,61 +5,63 @@
     {
       "path": "/home/dustin/.claude-code-router/plugins/z-ai-vision.js",
       "options": {}
+    },
+    {
+      "path": "/home/dustin/.claude-code-router/plugins/z-ai-websearch.js",
+      "options": {
+        "endpoint": "https://api.z.ai/api/mcp/web_search_prime/mcp",
+        "timeout": 60000
+      }
     }
   ],
-  "Providers": [
+  "providers": [
     {
       "name": "z-ai",
       "api_base_url": "https://api.z.ai/api/coding/paas/v4/chat/completions",
       "api_key": "${Z_AI_API_KEY}",
       "transformer": {
         "use": [
-          "z-ai-vision",
           "reasoning",
           "enhancetool",
+          "z-ai-vision",
           "OpenAI"
+        ],
+        "GLM-4.6": {
+          "use": [
+            "maxtoken",
+            200000
+          ]
+        },
+        "GLM-4.5": {
+          "use": [
+            "maxtoken",
+            128000
+          ]
+        },
+        "GLM-4.5-air": {
+          "use": [
+            "maxtoken",
+            128000
+          ]
+        }
+      },
+      "models": [
+        "GLM-4.6",
+        "GLM-4.5",
+        "GLM-4.5-air"
+      ]
+    },
+    {
+      "name": "z-ai-mcp-websearch",
+      "api_base_url": "http://localhost:37891",
+      "api_key": "*",
+      "transformer": {
+        "use": [
+          "z-ai-websearch"
         ]
       },
       "models": [
-        {
-          "name": "GLM-4.6",
-          "transformer": {
-            "use": [
-              [
-                "maxtoken",
-                {
-                  "max_tokens": 200000
-                }
-              ]
-            ]
-          }
-        },
-        {
-          "name": "GLM-4.5",
-          "transformer": {
-            "use": [
-              [
-                "maxtoken",
-                {
-                  "max_tokens": 115000
-                }
-              ]
-            ]
-          }
-        },
-        {
-          "name": "GLM-4.5-air",
-          "transformer": {
-            "use": [
-              [
-                "maxtoken",
-                {
-                  "max_tokens": 115000
-                }
-              ]
-            ]
-          }
-        }
+        "websearch"
       ]
     }
   ],
@@ -69,7 +71,7 @@
     "think": "z-ai,GLM-4.6",
     "longContext": "z-ai,GLM-4.6",
     "longContextThreshold": 200000,
-    "webSearch": "z-ai,GLM-4.5-air",
+    "webSearch": "z-ai-mcp-websearch,websearch",
     "coding": "z-ai,GLM-4.6"
   }
 }

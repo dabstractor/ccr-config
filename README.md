@@ -1,22 +1,17 @@
 # CCR GLM Config
 
-A **Claude Code Router** configuration for integrating **Z.AI GLM models** with intelligent routing and vision processing capabilities.
+A ready-to-use configuration that adds **GLM model support to Claude Code Router** for **Thinking**, **WebSearch**, and **Image Uploads**.
 
-## Overview
+## Quick Setup
 
-This configuration enables Claude Code Router to automatically route requests to different Z.AI GLM models based on task type and context, with advanced image analysis capabilities through a custom vision transformer plugin.
+### 1. Install Claude Code
 
-## Features
+```bash
+# Install Claude Code CLI
+npm install -g @anthropic/claude-code
+```
 
-- **Intelligent Model Routing**: Automatically selects the best GLM model for different tasks
-- **Vision Processing**: Analyzes images and screenshots with GLM-4.5-v
-- **Multi-Model Support**: GLM-4.6, GLM-4.5, and GLM-4.5-air models
-- **Context Awareness**: Handles both short and long conversations efficiently
-- **OpenAI Compatibility**: Works with tools expecting OpenAI API format
-
-## Prerequisites
-
-### 1. Install Claude Code Router
+### 2. Install Claude Code Router
 
 ```bash
 # Clone the Claude Code Router repository
@@ -30,7 +25,7 @@ npm install
 npm install -g .
 ```
 
-### 2. Get Z.AI API Key
+### 3. Get Z.AI API Key
 
 1. Sign up at [Z.AI](https://z.ai)
 2. Generate an API key from your account settings
@@ -40,185 +35,77 @@ npm install -g .
 export Z_AI_API_KEY="your_api_key_here"
 ```
 
-## Quick Start
-
-1. **Clone this configuration:**
-   ```bash
-   git clone <this-repository-url>
-   cd ccr-glm-config
-   ```
-
-2. **Set up your Z.AI API key:**
-   ```bash
-   export Z_AI_API_KEY="your_api_key_here"
-   ```
-
-3. **Start the router:**
-   ```bash
-   ccr start
-   ```
-
-4. **Configure Claude Code to use the router:**
-   ```bash
-   claude code config set api_base_url http://localhost:3000/v1
-   ```
-
-## Configuration
-
-### Model Routing
-
-The router automatically selects models based on task type:
-
-| Task Type | Model | Use Case |
-|-----------|-------|----------|
-| `default` | GLM-4.6 | General conversations |
-| `background` | GLM-4.5-air | Lightweight background tasks |
-| `think` | GLM-4.6 | Complex reasoning |
-| `longContext` | GLM-4.6 | Large contexts (>200k tokens) |
-| `webSearch` | GLM-4.5-air | Web search queries |
-| `coding` | GLM-4.6 | Programming tasks |
-
-### Vision Capabilities
-
-The included vision transformer automatically:
-- Analyzes images in your messages
-- Extracts text from screenshots
-- Describes visual content
-- Integrates analysis into conversation context
-
-**Limits:**
-- Max image size: 5MB
-- Timeout: 60 seconds per analysis
-
-## File Structure
-
-```
-ccr-glm-config/
-├── config.json              # Main router configuration
-├── plugins/
-│   └── z-ai-vision.js      # Vision transformer plugin
-├── logs/                    # Runtime logs
-└── README.md               # This file
-```
-
-## Configuration File
-
-The main `config.json` contains:
-
-- **Provider settings** for Z.AI GLM models
-- **Routing rules** for different task types
-- **Transformer pipeline** including vision processing
-- **API timeouts** and logging preferences
-
-## Usage Examples
-
-### Basic Conversation
+### 4. Install This Configuration
 
 ```bash
-# Start a conversation
-claude code "Explain quantum computing"
-# Routes to: GLM-4.6
+# Clone this configuration directly as your CCR config
+git clone <this-repository-url> ~/.claude-code-router
+
+# Navigate to the config directory
+cd ~/.claude-code-router
 ```
 
-### Image Analysis
+### 5. Start Using Claude Code
 
 ```bash
-# Send an image
-claude code --image screenshot.png "What does this error mean?"
-# Routes to: GLM-4.6 + Vision Transformer
+# Run Claude Code
+ccr code
 ```
 
-### Coding Task
+That's it! Claude Code will now automatically use Z.AI GLM models with intelligent routing.
+
+## What This Enables
+
+This configuration adds these GLM capabilities to Claude Code:
+
+- **🧠 Thinking**: Advanced reasoning and problem-solving with GLM's thinking models
+- **🔍 WebSearch**: Real-time web search integration through GLM's search capabilities
+- **🖼️ Image Uploads**: Visual analysis and image understanding with GLM's vision models
+
+## Why This Matters
+
+GLM's official interfaces only give you basic chat. This configuration unlocks the full power of your GLM plan by integrating Thinking, WebSearch, and Vision capabilities directly into your development workflow - the seamless experience you should have had out of the box.
+
+## Example Usage
 
 ```bash
-# Code generation
-claude code "Write a Python function to sort a list"
-# Routes to: GLM-4.6 (coding context)
-```
+# Start Claude Code with GLM models
+ccr code
 
-### Background Task
-
-```bash
-# Simple query
-claude code "What's the weather like?"
-# Routes to: GLM-4.5-air (efficient for simple tasks)
+# Example interactions within Claude Code:
+# "Think through this step by step: [complex problem]"
+# "Search the web for latest information about [topic]"
+# "Analyze this image: [paste image directly]"
+# "Write a Python function to sort a list"
 ```
 
 ## Troubleshooting
 
-### Common Issues
-
-1. **"API key not found"**
-   - Make sure `Z_AI_API_KEY` environment variable is set
-   - Verify your Z.AI account has active API access
-
-2. **"Vision analysis failed"**
-   - Check image size is under 5MB
-   - Ensure image format is supported (PNG, JPG, WebP)
-   - Verify internet connectivity for vision API
-
-3. **"Router not responding"**
-   - Check if Claude Code Router is installed and running
-   - Verify the router is listening on port 3000
-   - Check logs in `logs/` directory
-
-### Viewing Logs
-
+### Router won't start
 ```bash
-# View latest log
-tail -f logs/ccr-console.log
-
-# View session logs
-ls logs/ccr-*.log
+# Check if CCR is installed
+ccr --version
 ```
 
-## Customization
+### API key issues
+```bash
+# Verify environment variable is set
+echo $Z_AI_API_KEY
 
-### Adding Custom Routing
-
-Create a custom router function in your config:
-
-```javascript
-{
-  "router": {
-    "type": "custom",
-    "path": "./custom-router.js"
-  }
-}
+# Set it for the current session
+export Z_AI_API_KEY="your_api_key_here"
 ```
 
-### Modifying Model Selection
+### Can't connect to Claude Code
+```bash
+# Make sure router is running
+ccr status
 
-Edit `config.json` to change model assignments:
-
-```json
-{
-  "router": {
-    "rules": {
-      "coding": "z-ai,GLM-4.5"  // Use GLM-4.5 for coding instead
-    }
-  }
-}
+# Restart if needed
+ccr restart
 ```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Support
 
 - **Claude Code Router**: [GitHub Repository](https://github.com/dustinvsmith/claude-code-router)
 - **Z.AI Documentation**: [Z.AI Developer Portal](https://z.ai/docs)
-- **Issues**: Report bugs via GitHub Issues
-
----
-
-**Note**: This configuration requires an active Z.AI API subscription. Check Z.AI pricing for usage costs.
