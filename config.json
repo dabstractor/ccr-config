@@ -3,11 +3,11 @@
   "API_TIMEOUT_MS": 120000,
   "transformers": [
     {
-      "path": "/home/dustin/.claude-code-router/plugins/z-ai-vision.js",
+      "path": "/home/user/.claude-code-router/plugins/z-ai-vision.js",
       "options": {}
     },
     {
-      "path": "/home/dustin/.claude-code-router/plugins/z-ai-websearch.js",
+      "path": "/home/user/.claude-code-router/plugins/z-ai-websearch.js",
       "options": {
         "endpoint": "https://api.z.ai/api/mcp/web_search_prime/mcp",
         "timeout": 60000

@@ -43,6 +43,10 @@ git clone <this-repository-url> ~/.claude-code-router
 
 # Navigate to the config directory
 cd ~/.claude-code-router
+
+# IMPORTANT: Update plugin paths to absolute paths in config.json
+# Claude Code Router requires absolute paths for all plugin paths.
+# Replace /home/user/.claude-code-router/plugins/ with your actual path
 ```
 
 ### 5. Start Using Claude Code
