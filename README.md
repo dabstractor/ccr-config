@@ -4,28 +4,17 @@ A ready-to-use configuration that adds **GLM model support to Claude Code Router
 
 ## Quick Setup
 
-### 1. Install Claude Code
+### 1. Install Prerequisites
 
 ```bash
 # Install Claude Code CLI
-npm install -g @anthropic/claude-code
+npm install -g @anthropic-ai/claude-code
+
+# Install Claude Code Router
+npm install -g @musistudio/claude-code-router
 ```
 
-### 2. Install Claude Code Router
-
-```bash
-# Clone the Claude Code Router repository
-git clone https://github.com/dustinvsmith/claude-code-router.git
-cd claude-code-router
-
-# Install dependencies
-npm install
-
-# Install globally
-npm install -g .
-```
-
-### 3. Get Z.AI API Key
+### 2. Get Z.AI API Key
 
 1. Sign up at [Z.AI](https://z.ai)
 2. Generate an API key from your account settings
@@ -35,21 +24,20 @@ npm install -g .
 export Z_AI_API_KEY="your_api_key_here"
 ```
 
-### 4. Install This Configuration
+### 3. Install This Configuration
 
 ```bash
 # Clone this configuration directly as your CCR config
-git clone <this-repository-url> ~/.claude-code-router
+git clone git@github.com:dabstractor/ccr-glm-config.git ~/.claude-code-router
 
-# Navigate to the config directory
-cd ~/.claude-code-router
 
 # IMPORTANT: Update plugin paths to absolute paths in config.json
 # Claude Code Router requires absolute paths for all plugin paths.
 # Replace /home/user/.claude-code-router/plugins/ with your actual path
+sed "s|/home/user|$HOME|g" ~/.claude-code-router/config.json > ~/.claude-code-router/config.json.tmp && mv ~/.claude-code-router/config.json.tmp ~/.claude-code-router/config.json
 ```
 
-### 5. Start Using Claude Code
+### 4. Start Using Claude Code
 
 ```bash
 # Run Claude Code
