@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs/promises");
 
 const OAUTH_FILE = path.join(os.homedir(), ".gemini", "oauth_creds.json");
+const CODE_ASSIST_ENDPOINT = "https://cloudcode-pa.googleapis.com/v1internal";
 
 // Type enum equivalent in JavaScript
 const Type = {
@@ -184,15 +185,77 @@ class GeminiCLITransformer {
   constructor(options) {
     thisA = this;
     this.options = options;
+    this.projectId = null; // Will be fetched dynamically from loadCodeAssist
+    this.projectIdPromise = null; // Cache the promise to avoid duplicate calls
     try {
       this.oauth_creds = require(OAUTH_FILE);
     } catch {}
   }
 
+  /**
+   * Fetch the project ID from loadCodeAssist endpoint
+   * This is required because the server assigns a dynamic project ID
+   */
+  async loadCodeAssist() {
+    if (this.projectId) {
+      return this.projectId;
+    }
+
+    // If already fetching, wait for that promise
+    if (this.projectIdPromise) {
+      return this.projectIdPromise;
+    }
+
+    this.projectIdPromise = (async () => {
+      try {
+        console.error("[gemini-cli] Fetching project from loadCodeAssist...");
+        const response = await fetch(`${CODE_ASSIST_ENDPOINT}:loadCodeAssist`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.oauth_creds.access_token}`,
+            "user-agent": "GeminiCLI/v22.12.0",
+          },
+          body: JSON.stringify({
+            metadata: {
+              ideType: "IDE_UNSPECIFIED",
+              platform: "PLATFORM_UNSPECIFIED",
+              pluginType: "GEMINI",
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`loadCodeAssist failed: ${response.status} - ${text}`);
+        }
+
+        const data = await response.json();
+        this.projectId = data.cloudaicompanionProject;
+        console.error("[gemini-cli] Got project ID:", this.projectId);
+        return this.projectId;
+      } catch (error) {
+        console.error("[gemini-cli] Failed to load project ID:", error.message);
+        // Fall back to configured project if loadCodeAssist fails
+        this.projectId = this.options?.project;
+        return this.projectId;
+      }
+    })();
+
+    return this.projectIdPromise;
+  }
+
   async transformRequestIn(request, provider) {
+    console.error("[gemini-cli] transformRequestIn called for model:", request.model);
     if (this.oauth_creds && this.oauth_creds.expiry_date < +new Date()) {
+      console.error("[gemini-cli] Refreshing token...");
       await this.refreshToken(this.oauth_creds.refresh_token);
     }
+
+    // Get the dynamic project ID from loadCodeAssist
+    const projectId = await this.loadCodeAssist();
+    console.error("[gemini-cli] Using project:", projectId);
+
     const tools = [];
     const functionDeclarations = request.tools
       ?.filter((tool) => tool.function.name !== "web_search")
@@ -282,8 +345,24 @@ class GeminiCLITransformer {
         }
 
         if (Array.isArray(message.tool_calls)) {
+          const hasSignature = !!message.thinking?.signature;
+          const isGemini3 = request.model.includes("gemini-3");
+
+          // Gemini 3 requires thought signatures on function calls
+          // Use the documented bypass signature for cross-model migration
+          // (e.g., conversation history from Claude or other models)
+          const bypassSignature = "context_engineering_is_the_way_to_go";
+
           parts.push(
             ...message.tool_calls.map((toolCall, index) => {
+              // Use real signature if available, otherwise use bypass for Gemini 3
+              let signature;
+              if (index === 0 && hasSignature) {
+                signature = message.thinking.signature;
+              } else if (isGemini3 && index === 0) {
+                signature = bypassSignature;
+              }
+
               return {
                 functionCall: {
                   id:
@@ -292,10 +371,7 @@ class GeminiCLITransformer {
                   name: toolCall.function.name,
                   args: JSON.parse(toolCall.function.arguments || "{}"),
                 },
-                thoughtSignature:
-                  index === 0 && message.thinking?.signature
-                    ? message.thinking?.signature
-                    : undefined,
+                thoughtSignature: signature,
               };
             })
           );
@@ -404,7 +480,7 @@ class GeminiCLITransformer {
       body: {
         request: body,
         model: request.model,
-        project: this.options?.project,
+        project: projectId,
       },
       config: {
         url: new URL(
@@ -917,9 +993,7 @@ class GeminiCLITransformer {
           new Date().getTime() + data.expires_in * 1000 - 1000 * 60;
         data.refresh_token = refresh_token;
         delete data.expires_in;
-        console.log("this.oauth_creds before: ", this.oauth_creds);
         this.oauth_creds = data;
-        console.log("this.oauth_creds after: ", this.oauth_creds);
         await fs.writeFile(OAUTH_FILE, JSON.stringify(data, null, 2));
       });
   }
