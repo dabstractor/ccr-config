@@ -4,7 +4,6 @@
   "transformers": [
     {
       "path": "/home/dustin/.claude-code-router/plugins/z-ai-vision.js",
-      "options": {}
     },
     {
       "path": "/home/dustin/.claude-code-router/plugins/z-ai-websearch.js",
@@ -15,9 +14,6 @@
     },
     {
       "path": "/home/dustin/.claude-code-router/plugins/gemini-cli.js",
-      "options": {
-        "project": "gen-lang-client-0884090445"
-      }
     },
     {
       "path": "/home/dustin/.claude-code-router/plugins/qwen-cli.js"
@@ -80,22 +76,36 @@
       "models": [
         "gemini-3-pro-preview",
         "gemini-2.5-pro",
-        "gemini-2.5-flash"
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite"
       ],
       "transformer": {
         "use": [
+          "reasoning",
           "gemini-cli"
         ]
       }
+    },
+    {
+      "name": "ar",
+      "api_base_url": "https://agentrouter.org/v1",
+      "api_key": "${AGENTROUTER_API_KEY}",
+      "models": [
+        "claude-sonnet-4-5-20250929",
+        "gpt-5.1"
+      ],
+      "transformers": [
+        "OpenAI"
+      ]
     }
   ],
   "Router": {
-    "default": "z-ai,GLM-4.6",
-    "background": "z-ai,GLM-4.5-air",
+    "default": "gc,gemini-3-pro-preview",
+    "background": "gc,gemini-2.5-flash-lite",
     "think": "gc,gemini-3-pro-preview",
     "longContext": "gc,gemini-3-pro-preview",
     "longContextThreshold": 200000,
-    "webSearch": "z-ai-mcp-websearch,websearch",
+    "webSearch": "gc,gemini-2.5-flash",
     "coding": "z-ai,GLM-4.6"
   }
 }
