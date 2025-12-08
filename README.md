@@ -101,3 +101,7 @@ ccr restart
 
 - **Claude Code Router**: [GitHub Repository](https://github.com/dustinvsmith/claude-code-router)
 - **Z.AI Documentation**: [Z.AI Developer Portal](https://z.ai/docs)
+
+---
+
+<a href="https://buymeacoffee.com/dustindsch2" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>
