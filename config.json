@@ -46,7 +46,9 @@
         }
       },
       "models": [
+        "GLM-4.7",
         "GLM-4.6",
+        "GLM-4.5v",
         "GLM-4.5",
         "GLM-4.5-air"
       ]
@@ -66,12 +68,12 @@
     }
   ],
   "Router": {
-    "default": "z-ai,GLM-4.6",
+    "default": "z-ai,GLM-4.7",
     "background": "z-ai,GLM-4.5-air",
-    "think": "z-ai,GLM-4.6",
-    "longContext": "z-ai,GLM-4.6",
+    "think": "z-ai,GLM-4.7",
+    "longContext": "z-ai,GLM-4.7",
     "longContextThreshold": 200000,
     "webSearch": "z-ai-mcp-websearch,websearch",
-    "coding": "z-ai,GLM-4.6"
+    "coding": "z-ai,GLM-4.7"
   }
 }
