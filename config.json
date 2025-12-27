@@ -81,6 +81,7 @@
       "api_key": "*",
       "models": [
         "gemini-3-pro-preview",
+        "gemini-3-flash-preview",
         "gemini-2.5-pro",
         "gemini-2.5-flash",
         "gemini-2.5-flash-lite"
@@ -106,12 +107,12 @@
     }
   ],
   "Router": {
-    "default": "z-ai,GLM-4.7",
-    "background": "z-ai,GLM-4.5-air",
-    "think": "z-ai,GLM-4.7",
-    "longContext": "z-ai,GLM-4.7",
+    "default": "gc,gemini-3-pro-preview",
+    "background": "gc,gemini-3-flash-preview",
+    "think": "gc,gemini-3-pro-preview",
+    "longContext": "gc,gemini-3-pro-preview",
     "longContextThreshold": 200000,
-    "webSearch": "z-ai-mcp-websearch,websearch",
+    "webSearch": "gc,gemini-3-flash-preview",
     "coding": "z-ai,GLM-4.7"
   }
 }
