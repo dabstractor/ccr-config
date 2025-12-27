@@ -1,9 +1,17 @@
 const os = require("os");
 const path = require("path");
 const fs = require("fs/promises");
+const { execSync } = require("child_process");
 
-const OAUTH_FILE = path.join(os.homedir(), ".gemini", "oauth_creds.json");
 const CODE_ASSIST_ENDPOINT = "https://cloudcode-pa.googleapis.com/v1internal";
+
+let oauth_file;
+
+function updateOauthFile() {
+  oauth_file = path.join(os.homedir(), ".gemini", "oauth_creds.json");
+}
+
+updateOauthFile(); 
 
 // Type enum equivalent in JavaScript
 const Type = {
@@ -188,7 +196,7 @@ class GeminiCLITransformer {
     this.projectId = null; // Will be fetched dynamically from loadCodeAssist
     this.projectIdPromise = null; // Cache the promise to avoid duplicate calls
     try {
-      this.oauth_creds = require(OAUTH_FILE);
+      this.oauth_creds = require(oauth_file);
     } catch {}
   }
 
@@ -247,6 +255,7 @@ class GeminiCLITransformer {
 
   async transformRequestIn(request, provider) {
     console.error("[gemini-cli] transformRequestIn called for model:", request.model);
+    console.error("[gemini-cli] options:", JSON.stringify(this.options));
     if (this.oauth_creds && this.oauth_creds.expiry_date < +new Date()) {
       console.error("[gemini-cli] Refreshing token...");
       await this.refreshToken(this.oauth_creds.refresh_token);
@@ -497,6 +506,21 @@ class GeminiCLITransformer {
   }
 
   async transformResponseOut(response) {
+    console.error("[gemini-cli] transformResponseOut called, status:", response.status);
+    console.error("[gemini-cli] options:", JSON.stringify(this.options));
+
+    // Check for 429 (quota exceeded) and execute onQuotaExhausted command if configured
+    if (response.status === 429 && this.options?.onQuotaExhausted) {
+      console.error("[gemini-cli] 429 quota exceeded, executing onQuotaExhausted command...");
+      try {
+        const output = execSync(this.options.onQuotaExhausted, { encoding: "utf-8" });
+        if (output) console.log(output);
+        this.oauth_creds = JSON.parse(require('fs').readFileSync(oauth_file, 'utf-8'));
+      } catch (error) {
+        console.error("[gemini-cli] onQuotaExhausted command error:", error.message);
+      }
+    }
+
     if (response.headers.get("Content-Type")?.includes("application/json")) {
       let jsonResponse = await response.json();
       jsonResponse = jsonResponse.response;
@@ -994,7 +1018,7 @@ class GeminiCLITransformer {
         data.refresh_token = refresh_token;
         delete data.expires_in;
         this.oauth_creds = data;
-        await fs.writeFile(OAUTH_FILE, JSON.stringify(data, null, 2));
+        await fs.writeFile(oauth_file, JSON.stringify(data, null, 2));
       });
   }
 }
