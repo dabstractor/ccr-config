@@ -2,22 +2,17 @@
 # Test Gemini models against the cloudcode API
 # Refreshes OAuth token if expired and tests each model
 #
-# Usage: test-gemini-models.sh <project-id>
+# Usage: test-gemini-models.sh [project-id]
+#   If project-id is not provided, it will be auto-detected via loadCodeAssist
+# Example: test-gemini-models.sh
 # Example: test-gemini-models.sh gen-lang-client-0884090445
 
 set -uo pipefail
 
-if [[ $# -lt 1 ]]; then
-    echo "Usage: $0 <project-id>"
-    echo "Example: $0 gen-lang-client-0884090445"
-    exit 1
-fi
-
-PROJECT="$1"
-
 OAUTH_FILE="$HOME/.gemini/oauth_creds.json"
 CLIENT_ID="681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
 CLIENT_SECRET="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"
+CODE_ASSIST_ENDPOINT="https://cloudcode-pa.googleapis.com/v1internal"
 
 # Colors
 RED='\033[0;31m'
@@ -81,6 +76,33 @@ fi
 # Get access token
 ACCESS_TOKEN=$(jq -r '.access_token' "$OAUTH_FILE")
 
+# Auto-detect project ID via loadCodeAssist if not provided
+if [[ $# -ge 1 ]]; then
+    PROJECT="$1"
+else
+    echo "Auto-detecting project ID via loadCodeAssist..."
+    response=$(curl -s -X POST "${CODE_ASSIST_ENDPOINT}:loadCodeAssist" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $ACCESS_TOKEN" \
+        -H "user-agent: GeminiCLI/v22.12.0" \
+        -d '{
+            "metadata": {
+                "ideType": "IDE_UNSPECIFIED",
+                "platform": "PLATFORM_UNSPECIFIED",
+                "pluginType": "GEMINI"
+            }
+        }')
+
+    if ! echo "$response" | jq -e '.cloudaicompanionProject' > /dev/null 2>&1; then
+        echo "Error: Failed to auto-detect project ID"
+        echo "Response: $response"
+        exit 1
+    fi
+
+    PROJECT=$(echo "$response" | jq -r '.cloudaicompanionProject')
+    echo "Detected project ID: $PROJECT"
+fi
+
 echo ""
 echo "Testing Gemini models on cloudcode API"
 echo "Project: $PROJECT"
@@ -88,9 +110,10 @@ echo "Time: $(date)"
 echo "========================================"
 echo ""
 
-# Models to test
+# Models to test (all models from gc provider in config.json)
 MODELS=(
     "gemini-3-pro-preview"
+    "gemini-3-flash-preview"
     "gemini-2.5-pro"
     "gemini-2.5-flash"
     "gemini-2.5-flash-lite"
