@@ -190,9 +190,9 @@ let thisA, thisB;
 class GeminiCLITransformer {
   name = "gemini-cli";
 
-  constructor(options) {
+  constructor(options = {}) {
     thisA = this;
-    this.options = options;
+    this.options = options || {};
     this.projectId = null; // Will be fetched dynamically from loadCodeAssist
     this.projectIdPromise = null; // Cache the promise to avoid duplicate calls
     try {
@@ -510,14 +510,27 @@ class GeminiCLITransformer {
     console.error("[gemini-cli] options:", JSON.stringify(this.options));
 
     // Check for 429 (quota exceeded) and execute onQuotaExhausted command if configured
-    if (response.status === 429 && this.options?.onQuotaExhausted) {
-      console.error("[gemini-cli] 429 quota exceeded, executing onQuotaExhausted command...");
+    if (
+      response.status === 429 &&
+      this.options?.onQuotaExhausted &&
+      typeof this.options.onQuotaExhausted === "string"
+    ) {
+      console.error(
+        "[gemini-cli] 429 quota exceeded, executing onQuotaExhausted command..."
+      );
       try {
-        const output = execSync(this.options.onQuotaExhausted, { encoding: "utf-8" });
+        const output = execSync(this.options.onQuotaExhausted, {
+          encoding: "utf-8",
+        });
         if (output) console.log(output);
-        this.oauth_creds = JSON.parse(require('fs').readFileSync(oauth_file, 'utf-8'));
+        this.oauth_creds = JSON.parse(
+          require("fs").readFileSync(oauth_file, "utf-8")
+        );
       } catch (error) {
-        console.error("[gemini-cli] onQuotaExhausted command error:", error.message);
+        console.error(
+          "[gemini-cli] onQuotaExhausted command error:",
+          error.message
+        );
       }
     }
 
