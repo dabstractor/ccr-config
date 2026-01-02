@@ -216,7 +216,7 @@ class GeminiCLITransformer {
 
     this.projectIdPromise = (async () => {
       try {
-        console.error("[gemini-cli] Fetching project from loadCodeAssist...");
+        console.error("[gemini-cli] Fetching new project ID from loadCodeAssist...");
         const response = await fetch(`${CODE_ASSIST_ENDPOINT}:loadCodeAssist`, {
           method: "POST",
           headers: {
@@ -254,16 +254,14 @@ class GeminiCLITransformer {
   }
 
   async transformRequestIn(request, provider) {
-    console.error("[gemini-cli] transformRequestIn called for model:", request.model);
-    console.error("[gemini-cli] options:", JSON.stringify(this.options));
+    this.lastRequest = request;
+    this.lastProvider = provider;
     if (this.oauth_creds && this.oauth_creds.expiry_date < +new Date()) {
-      console.error("[gemini-cli] Refreshing token...");
       await this.refreshToken(this.oauth_creds.refresh_token);
     }
 
     // Get the dynamic project ID from loadCodeAssist
     const projectId = await this.loadCodeAssist();
-    console.error("[gemini-cli] Using project:", projectId);
 
     const tools = [];
     const functionDeclarations = request.tools
@@ -506,9 +504,6 @@ class GeminiCLITransformer {
   }
 
   async transformResponseOut(response) {
-    console.error("[gemini-cli] transformResponseOut called, status:", response.status);
-    console.error("[gemini-cli] options:", JSON.stringify(this.options));
-
     // Check for 429 (quota exceeded) and execute onQuotaExhausted command if configured
     if (
       response.status === 429 &&
@@ -518,14 +513,49 @@ class GeminiCLITransformer {
       console.error(
         "[gemini-cli] 429 quota exceeded, executing onQuotaExhausted command..."
       );
+
       try {
         const output = execSync(this.options.onQuotaExhausted, {
           encoding: "utf-8",
         });
-        if (output) console.log(output);
+        if (output) console.error("[gemini-cli] onQuotaExhausted output:", output);
+
+        // Reload credentials
         this.oauth_creds = JSON.parse(
           require("fs").readFileSync(oauth_file, "utf-8")
         );
+
+        // Clear cached project ID so it's re-fetched with new credentials
+        this.projectId = null;
+        this.projectIdPromise = null;
+
+        console.error("[gemini-cli] Credentials reloaded and project cache cleared.");
+
+        // Retry the request with new credentials
+        console.error("[gemini-cli] Retrying request with new credentials...");
+
+        // Re-transform the request to get new headers/projectID
+        const transformed = await this.transformRequestIn(
+          this.lastRequest,
+          this.lastProvider
+        );
+        const newUrl = transformed.config.url;
+        const newHeaders = transformed.config.headers;
+        const newBody = JSON.stringify(transformed.body.request);
+
+        console.error("[gemini-cli] Sending retry request to:", newUrl.toString());
+
+        // Make the new request
+        const newResponse = await fetch(newUrl, {
+          method: "POST",
+          headers: newHeaders,
+          body: newBody,
+        });
+
+        console.error("[gemini-cli] Retry response status:", newResponse.status);
+
+        // Recurse to process the new response (it might be a stream or json)
+        return this.transformResponseOut(newResponse);
       } catch (error) {
         console.error(
           "[gemini-cli] onQuotaExhausted command error:",
