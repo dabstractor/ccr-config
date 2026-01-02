@@ -20,6 +20,10 @@
       }
     },
     {
+      "path": "/home/dustin/.claude-code-router/plugins/antigravity.js",
+      "options": {}
+    },
+    {
       "path": "/home/dustin/.claude-code-router/plugins/qwen-cli.js"
     }
   ],
@@ -94,6 +98,26 @@
       }
     },
     {
+      "name": "ag",
+      "api_base_url": "https://cloudcode-pa.googleapis.com/v1internal",
+      "api_key": "*",
+      "models": [
+        "antigravity-claude-sonnet-4-5",
+        "antigravity-claude-sonnet-4-5-thinking-low",
+        "antigravity-claude-sonnet-4-5-thinking-medium",
+        "antigravity-claude-sonnet-4-5-thinking-high",
+        "antigravity-claude-opus-4-5-thinking-low",
+        "antigravity-claude-opus-4-5-thinking-medium",
+        "antigravity-claude-opus-4-5-thinking-high"
+      ],
+      "transformer": {
+        "use": [
+          "reasoning",
+          "antigravity"
+        ]
+      }
+    },
+    {
       "name": "ar",
       "api_base_url": "https://agentrouter.org/v1",
       "api_key": "${AGENTROUTER_API_KEY}",
@@ -107,9 +131,9 @@
     }
   ],
   "Router": {
-    "default": "gc,gemini-3-pro-preview",
+    "default": "ag,antigravity-claude-opus-4-5-thinking-medium",
     "background": "gc,gemini-3-flash-preview",
-    "think": "gc,gemini-3-pro-preview",
+    "think": "ag,antigravity-claude-opus-4-5-thinking-high",
     "longContext": "gc,gemini-3-pro-preview",
     "longContextThreshold": 200000,
     "webSearch": "gc,gemini-3-flash-preview",

@@ -510,31 +510,67 @@ class GeminiCLITransformer {
       this.options?.onQuotaExhausted &&
       typeof this.options.onQuotaExhausted === "string"
     ) {
-      console.error(
-        "[gemini-cli] 429 quota exceeded, executing onQuotaExhausted command..."
-      );
+      console.error("[gemini-cli] 429 quota exceeded, running quota handler...");
 
       try {
         const output = execSync(this.options.onQuotaExhausted, {
           encoding: "utf-8",
+          timeout: 30000, // 30 second timeout
         });
-        if (output) console.error("[gemini-cli] onQuotaExhausted output:", output);
+        if (output) console.error("[gemini-cli] Quota handler output:", output.trim());
+        console.error("[gemini-cli] Quota handler completed");
 
-        // Reload credentials
-        this.oauth_creds = JSON.parse(
-          require("fs").readFileSync(oauth_file, "utf-8")
-        );
+        // Wait for filesystem to settle after directory swap
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Reload credentials with retry logic
+        const maxRetries = 3;
+        let credentialsLoaded = false;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            // Check if file exists first
+            const fsSync = require("fs");
+            if (!fsSync.existsSync(oauth_file)) {
+              console.error(`[gemini-cli] Credentials file not found (attempt ${attempt}/${maxRetries}), waiting...`);
+              await new Promise(resolve => setTimeout(resolve, 200 * attempt));
+              continue;
+            }
+
+            const newCreds = JSON.parse(fsSync.readFileSync(oauth_file, "utf-8"));
+
+            // Verify we got different credentials (different access token or refresh token)
+            if (this.oauth_creds &&
+                newCreds.access_token === this.oauth_creds.access_token &&
+                newCreds.refresh_token === this.oauth_creds.refresh_token) {
+              console.error("[gemini-cli] Warning: Credentials unchanged after swap");
+            }
+
+            this.oauth_creds = newCreds;
+            credentialsLoaded = true;
+            console.error("[gemini-cli] Credentials reloaded successfully");
+            break;
+          } catch (readError) {
+            console.error(`[gemini-cli] Credential read error (attempt ${attempt}/${maxRetries}):`, readError.message);
+            if (attempt < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 200 * attempt));
+            }
+          }
+        }
+
+        if (!credentialsLoaded) {
+          console.error("[gemini-cli] Failed to reload credentials after all retries");
+          // Return original 429 response - let the caller handle it
+          return response;
+        }
 
         // Clear cached project ID so it's re-fetched with new credentials
         this.projectId = null;
         this.projectIdPromise = null;
-
-        console.error("[gemini-cli] Credentials reloaded and project cache cleared.");
-
-        // Retry the request with new credentials
-        console.error("[gemini-cli] Retrying request with new credentials...");
+        console.error("[gemini-cli] Project cache cleared");
 
         // Re-transform the request to get new headers/projectID
+        console.error("[gemini-cli] Retrying request with new credentials...");
         const transformed = await this.transformRequestIn(
           this.lastRequest,
           this.lastProvider
@@ -542,8 +578,6 @@ class GeminiCLITransformer {
         const newUrl = transformed.config.url;
         const newHeaders = transformed.config.headers;
         const newBody = JSON.stringify(transformed.body.request);
-
-        console.error("[gemini-cli] Sending retry request to:", newUrl.toString());
 
         // Make the new request
         const newResponse = await fetch(newUrl, {
@@ -557,10 +591,9 @@ class GeminiCLITransformer {
         // Recurse to process the new response (it might be a stream or json)
         return this.transformResponseOut(newResponse);
       } catch (error) {
-        console.error(
-          "[gemini-cli] onQuotaExhausted command error:",
-          error.message
-        );
+        console.error("[gemini-cli] Quota handler error:", error.message);
+        // Return original 429 response on complete failure
+        return response;
       }
     }
 
